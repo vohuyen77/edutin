@@ -1,0 +1,6 @@
+{
+  "name": "EduTin THCS - Hệ Thống E-Learning & AI Auto-Grader",
+  "description": "Nền tảng E-learning môn Tin học cấp THCS (Lớp 6-9) tích hợp AI chấm bài tự động, luyện thi HSG Tin học C++, quản lý học sinh và phụ huynh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
