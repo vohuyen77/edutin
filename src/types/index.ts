@@ -59,6 +59,8 @@ export interface LessonMaterial {
   practiceType: 'quiz' | 'office' | 'scratch' | 'cpp';
   quizQuestions?: QuizQuestion[];
   assignmentPrompt?: string;
+  assignmentPdfName?: string;
+  customTeacherInstructions?: string;
   acceptedFormats: string[]; // ['.cpp', '.pdf', '.xlsx', '.excel', '.docx', '.doc', '.ppt', '.pptx', '.sb3', '.zip']
   dueDate: string;
   rubricGuide?: RubricGuide;

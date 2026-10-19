@@ -3,11 +3,11 @@ import { User, BatchGradingItem, NotificationItem } from '../types';
 export const INITIAL_USERS: User[] = [
   {
     id: 'usr-teacher-1',
-    name: 'Thầy Nguyễn Văn Bình',
+    name: 'Cô Võ Thị Vân Huyền',
     role: 'teacher',
-    username: 'nguyenvanbinh_gv',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    email: 'binh.nguyen@thcs-edu.vn',
+    username: 'vothivanhuyen_admin',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    email: 'vohuyen6688@gmail.com',
     phone: '0912.888.999'
   },
   {

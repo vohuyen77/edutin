@@ -25,6 +25,7 @@ import confetti from 'canvas-confetti';
 import { CURRICULUM_DATA, ALL_SUPPORTED_FORMATS } from '../data/curriculumData';
 import { LessonMaterial, User, BatchGradingItem } from '../types';
 import { exportMultiSheetGradingExcel, DEFAULT_RUBRIC_GUIDE } from '../utils/excelHelper';
+import { AssignmentProgressD3Chart } from './AssignmentProgressD3Chart';
 
 interface CurriculumViewProps {
   currentUser: User;
@@ -48,6 +49,54 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiEvaluation, setAiEvaluation] = useState<any | null>(null);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState<string>(activeLesson.customTeacherInstructions || 'Yêu cầu trình bày sạch sẽ, tuân thủ đúng định dạng quy định, kiểm tra kỹ công thức và thuật toán.');
+  const [assignmentPdf, setAssignmentPdf] = useState<string>(activeLesson.assignmentPdfName || 'De_Bai_Thuc_Hanh_TinHoc_THCS.pdf');
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const pdfInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileBrowse = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+      setUploadedFile({
+        name: file.name,
+        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        type: ext || '.docx'
+      });
+      setAiEvaluation(null);
+      setSubmissionSuccess(false);
+    }
+  };
+
+  const handlePdfBrowse = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setAssignmentPdf(file.name);
+      confetti({ particleCount: 40 });
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+      setUploadedFile({
+        name: file.name,
+        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        type: ext || '.docx'
+      });
+      setAiEvaluation(null);
+      setSubmissionSuccess(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
 
   // Switch grade
   const handleSelectGrade = (grade: 6 | 7 | 8 | 9) => {
@@ -55,6 +104,8 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
     const gradeLessons = CURRICULUM_DATA.filter((l) => l.gradeLevel === grade);
     if (gradeLessons.length > 0) {
       setActiveLesson(gradeLessons[0]);
+      setCustomInstructions(gradeLessons[0].customTeacherInstructions || 'Yêu cầu trình bày sạch sẽ, tuân thủ định dạng quy định.');
+      setAssignmentPdf(gradeLessons[0].assignmentPdfName || 'De_Bai_Thuc_Hanh_TinHoc_THCS.pdf');
     }
     setSelectedAnswers({});
     setQuizSubmitted(false);
@@ -67,6 +118,8 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
   // Switch lesson
   const handleSelectLesson = (lesson: LessonMaterial) => {
     setActiveLesson(lesson);
+    setCustomInstructions(lesson.customTeacherInstructions || 'Yêu cầu trình bày sạch sẽ, tuân thủ định dạng quy định.');
+    setAssignmentPdf(lesson.assignmentPdfName || 'De_Bai_Thuc_Hanh_TinHoc_THCS.pdf');
     setSelectedAnswers({});
     setQuizSubmitted(false);
     setQuizScore(null);
@@ -139,8 +192,10 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
           assignmentTitle: activeLesson.title,
           gradeLevel: `Khối ${activeLesson.gradeLevel}`,
           fileType: uploadedFile.type,
-          submissionContent: `Tệp bài nộp thực hành: ${uploadedFile.name}. Đáp ứng mục tiêu bài thực hành: ${activeLesson.assignmentPrompt}`,
-          rubric: rubricPrompt
+          submissionContent: `Tệp bài nộp thực hành: ${uploadedFile.name}. Yêu cầu đề bài/Dòng lệnh tùy chỉnh: ${customInstructions}`,
+          rubric: rubricPrompt,
+          customTeacherInstructions: customInstructions,
+          assignmentPdfName: assignmentPdf
         })
       });
 
@@ -233,6 +288,11 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
             </button>
           ))}
         </div>
+      </div>
+
+      {/* D3.js Statistical Progress Dashboard */}
+      <div className="mb-6">
+        <AssignmentProgressD3Chart />
       </div>
 
       {/* Main Grid */}
@@ -524,9 +584,83 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
                 </span>
               </div>
 
-              <p className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-4 leading-relaxed">
-                <strong>Yêu cầu đề bài:</strong> {activeLesson.assignmentPrompt}
-              </p>
+              {/* PDF Assignment Brief & Custom Teacher Instructions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {/* PDF Assignment Brief Card */}
+                <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-indigo-900 uppercase flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-indigo-600" />
+                        Đề Bài Tập (Tệp PDF Đính Kèm)
+                      </span>
+                      <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded font-mono">
+                        PDF Brief
+                      </span>
+                    </div>
+                    <div className="text-sm font-semibold text-slate-800 truncate mb-1">
+                      {assignmentPdf}
+                    </div>
+                    <p className="text-[11px] text-slate-600">
+                      Tải xuống hoặc tải lên tệp đề bài PDF chi tiết do giáo viên biên soạn.
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <input
+                      ref={pdfInputRef}
+                      type="file"
+                      accept=".pdf"
+                      onChange={handlePdfBrowse}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (pdfInputRef.current) pdfInputRef.current.click();
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-50 transition-colors shadow-2xs inline-flex items-center gap-1"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      Tải Lên Đề PDF Mới
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        confetti({ particleCount: 30 });
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-2xs"
+                    >
+                      Xem / Tải Đề PDF
+                    </button>
+                  </div>
+                </div>
+
+                {/* Custom Teacher Instructions / Command Line Requirement */}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-slate-900 uppercase flex items-center gap-1.5">
+                        <Code className="w-4 h-4 text-emerald-600" />
+                        Dòng Lệnh / Yêu Cầu Tùy Chỉnh Từ Giáo Viên
+                      </span>
+                      <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded">
+                        Custom Rule
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      Nhập dòng lệnh biên dịch hoặc yêu cầu chấm tùy chỉnh (VD: <code className="text-indigo-700">g++ -O3 main.cpp</code> hoặc yêu cầu đặc thù của giáo viên).
+                    </p>
+                  </div>
+
+                  <textarea
+                    value={customInstructions}
+                    onChange={(e) => setCustomInstructions(e.target.value)}
+                    placeholder="Nhập yêu cầu chấm tùy chỉnh hoặc dòng lệnh..."
+                    className="w-full h-16 p-2 rounded-lg border border-slate-200 text-xs font-mono bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-hidden resize-none"
+                  />
+                </div>
+              </div>
 
               {/* Supported formats pills */}
               <div className="mb-4">
@@ -545,8 +679,26 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
                 </div>
               </div>
 
+              {/* Hidden File Input for Real Computer Upload */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".cpp,.pdf,.xlsx,.xls,.docx,.doc,.ppt,.pptx,.sb3,.zip"
+                onChange={handleFileBrowse}
+                className="hidden"
+              />
+
               {/* Upload Dropzone */}
-              <div className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-6 text-center transition-colors bg-slate-50/40">
+              <div 
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-6 text-center transition-colors bg-slate-50/40 cursor-pointer"
+                onClick={() => {
+                  if (!uploadedFile && fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+              >
                 {uploadedFile ? (
                   <div className="flex flex-col items-center">
                     <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-2 font-bold uppercase text-sm shadow-xs">
@@ -557,7 +709,10 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setUploadedFile(null)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUploadedFile(null);
+                        }}
                         className="text-xs text-rose-600 hover:text-rose-800 underline font-medium"
                       >
                         Chọn tệp khác
@@ -568,19 +723,37 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ currentUser }) =
                   <div>
                     <UploadCloud className="w-10 h-10 text-indigo-500 mx-auto mb-2" />
                     <p className="text-sm font-semibold text-slate-800">
-                      Kéo thả tệp bài nộp vào đây hoặc chọn nhanh tệp mẫu thử nghiệm
+                      Kéo thả tệp bài nộp vào đây hoặc bấm vào để chọn tệp từ máy tính
                     </p>
                     <p className="text-xs text-slate-500 mt-1 mb-4">
-                      Hệ thống tự động chấm theo Hướng dẫn chấm cho .cpp, .pdf, .excel, .docx, .doc, .ppt, .pptx, .sb3, .zip
+                      Hỗ trợ tải lên: .cpp, .pdf, .xlsx, .docx, .doc, .ppt, .pptx, .sb3, .zip
                     </p>
 
-                    <div className="space-y-2">
-                      <div className="text-xs text-slate-500 font-medium">Bấm chọn tệp mẫu để kiểm thử AI chấm:</div>
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (fileInputRef.current) fileInputRef.current.click();
+                        }}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                        Tải Tệp Lên Từ Máy Tính
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-200/60">
+                      <div className="text-xs text-slate-500 font-medium">Hoặc chọn nhanh tệp mẫu kiểm thử AI chấm:</div>
                       <div className="flex items-center justify-center gap-1.5 flex-wrap max-w-xl mx-auto">
                         {ALL_SUPPORTED_FORMATS.map((fmt) => (
                           <button
                             key={fmt}
-                            onClick={() => handlePickSampleFile(fmt)}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePickSampleFile(fmt);
+                            }}
                             className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-indigo-50 hover:border-indigo-400 hover:text-indigo-700 shadow-2xs transition-all cursor-pointer"
                           >
                             Tệp mẫu {fmt}

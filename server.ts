@@ -29,7 +29,7 @@ if (apiKey) {
 // -------------------------------------------------------------
 app.post('/api/ai/grade-submission', async (req, res) => {
   try {
-    const { studentName, assignmentTitle, gradeLevel, fileType, submissionContent, rubric, rubricGuide } = req.body;
+    const { studentName, assignmentTitle, gradeLevel, fileType, submissionContent, rubric, rubricGuide, customTeacherInstructions, assignmentPdfName } = req.body;
 
     const normalizedFormat = (fileType || 'docx').toLowerCase().replace('.', '');
 
@@ -101,8 +101,8 @@ Hãy đối chiếu bài nộp với HƯỚNG DẪN CHẤM (RUBRIC) sau để ch
 
 - Học sinh: ${studentName || 'Học sinh'}
 - Khối lớp: Tin học ${gradeLevel || 'THCS'}
-- Tiêu đề bài tập: ${assignmentTitle}
-- Định dạng tệp nộp: .${normalizedFormat} (Hỗ trợ: .cpp, .pdf, .excel/.xlsx, .docx/.doc, .ppt/.pptx, .sb3, .zip)
+- Tệp đề bài PDF đính kèm: ${assignmentPdfName || 'Đề bài chuẩn hệ thống'}
+- Yêu cầu dòng lệnh / Hướng dẫn chấm tùy chỉnh từ Giáo viên: ${customTeacherInstructions || 'Không có yêu cầu tùy chỉnh riêng, chấm theo Rubric chuẩn'}
 - Hướng dẫn chấm (Rubric):
 """
 ${rubric || 'Đầy đủ nội dung, đúng yêu cầu kỹ thuật từng định dạng, tính chính xác và thẩm mỹ.'}
